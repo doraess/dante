@@ -1,0 +1,53 @@
+!!! 5
+html
+  head
+    title VLC Remote Configuration
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    link(rel='stylesheet', href='http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css')
+    script(src='http://code.jquery.com/jquery-2.0.3.js')
+    script(src='http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js')
+    style
+      .ui-header .ui-title { margin-left: 1em; margin-right: 1em; text-overflow: clip; }
+  body
+    #main(data-role='page')
+      .jqm-header(data-role='header')
+        h1 VLC Remote Configuration
+      div(data-role='content')
+        div(data-role='fieldcontain')
+          label(for='forecast_api_key') Forecast.io API Key:
+          input#forecast_api_key(type='text', name='forecast_api_key', value='')
+        div(data-role='fieldcontain')
+          label(for='stock_symbol') Stock Symbol:
+          input#stock_symbol(type='text', name='stock_symbol', value='')
+        .ui-body.ui-body-b
+          fieldset.ui-grid-a
+            .ui-block-a
+              button#b-cancel(type='submit', data-theme='d') Cancelar
+            .ui-block-b
+              button#b-submit(type='submit', data-theme='a') Salvar
+    :coffeescript
+       getQueryVariable = (variable) ->
+         query = location.search.substring(1)
+         vars = query.split("&")
+         i = 0
+         while i < vars.length
+           pair = vars[i].split("=")
+           return decodeURIComponent(pair[1])  if pair[0] is variable
+           i++
+         ""
+       saveOptions = ->
+         options =
+           forecast_api_key: $("#forecast_api_key").val()
+           stock_symbol: $("#stock_symbol").val()
+           
+       $().ready ->
+         $("#b-cancel").click ->
+           document.location = "pebblejs://close#"
+
+         $("#b-submit").click ->
+           document.location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(saveOptions()))
+           
+         $("#forecast_api_key").val getQueryVariable("forecast_api_key")
+         $("#stock_symbol").val getQueryVariable("stock_symbol")
+

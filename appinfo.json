@@ -1,0 +1,104 @@
+{
+    "versionLabel": "1.0",
+    "uuid": "17c0d721-796a-46eb-bf22-427fa4bccdcf",
+    "appKeys": {
+          "icon" : 1,
+          "temperature" : 2,
+          "city" : 3,
+          "street" : 4,
+          "clouds" : 5,
+          "rain_prob" : 6,
+          "rain" : 7,
+          "stocks": 8
+		},
+    "longName": "Dante",
+    "versionCode": 1,
+    "capabilities": [
+        "configurable",
+        "location"
+    ],
+    "shortName": "Dante",
+    "companyName": "Doraess",
+    "watchapp": {
+        "watchface": true
+    },
+    "resources": {
+        "media": [
+            {
+                "menuIcon": true,
+                "type": "png",
+                "name": "APP_ICON",
+                "file": "images/app_icon.png"
+            },
+            {
+                "type": "png",
+                "name": "BKG",
+                "file": "images/weather_bg.png"
+            },
+            {
+                "type": "font",
+                "name": "ICOMOON_16",
+                "file": "fonts/icomoon.ttf"
+            },
+            {
+                "type": "font",
+                "name": "FUTURA_CONDENSED_45",
+                "file": "fonts/futura_condensed_bold-webfont.ttf"
+            },
+            {
+                "trackingAdjust": -1,
+                "characterRegex": "[a-zA-Z0-9:. -,@%/]",
+                "type": "font",
+                "name": "STREET_FUTURA_12",
+                "file": "fonts/futura.ttf"
+            },
+            {
+                "trackingAdjust": -1,
+                "characterRegex": "[a-zA-Z0-9: -.]",
+                "type": "font",
+                "name": "CITY_FUTURA_15",
+                "file": "fonts/futura.ttf"
+            },
+            {
+                "trackingAdjust": 1,
+                "characterRegex": "[0-9a-zA-Z ,]",
+                "type": "font",
+                "name": "FUTURA_18",
+                "file": "fonts/futura.ttf"
+            },
+            {
+                "trackingAdjust": -4,
+                "characterRegex": "[0-9: -]",
+                "type": "font",
+                "name": "FUTURA_40",
+                "file": "fonts/futura.ttf"
+            },
+            {
+                "trackingAdjust": -4,
+                "characterRegex": "[0-9:°% \\-]",
+                "type": "font",
+                "name": "FUTURA_25",
+                "file": "fonts/futura.ttf"
+            },
+            {
+                "trackingAdjust": -4,
+                "characterRegex": "[:]",
+                "type": "font",
+                "name": "FUTURA_45",
+                "file": "fonts/futura.ttf"
+            },
+            {
+                "trackingAdjust": 0,
+                "type": "font",
+                "name": "METEOCONS_28",
+                "file": "fonts/meteocons.ttf"
+            },
+            {
+                "trackingAdjust": 0,
+                "type": "font",
+                "name": "METEOCONS_14",
+                "file": "fonts/meteocons.ttf"
+            }
+        ]
+    }
+}
