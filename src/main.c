@@ -15,8 +15,9 @@
 #define BATTERY_LEVEL_FRAME  (GRect){ .origin = { 75, 7 }, .size = {30, 30} }
 #define UPDATED_FRAME        (GRect){ .origin = { 80, 7 }, .size = {60, 30} }
 #define WEATHER_FRAME        (GRect){ .origin = { 0, 90 }, .size = {144, 78} }
-#define TEMP_FRAME					 (GRect){ .origin = { 35, -2 }, .size = {82, 30} }
 #define ICON_FRAME					 (GRect){ .origin = { 0, 0 }, .size = {40, 40} }
+#define TEMP_FRAME					 (GRect){ .origin = { 35, -2 }, .size = {82, 30} }
+#define MOON_FRAME					 (GRect){ .origin = { 117, 3 }, .size = {30, 40} }
 #define RAIN_FRAME					 (GRect){ .origin = { 0, 28 }, .size = {144, 40} }
 #define CITY_FRAME					 (GRect){ .origin = { 0, 45 }, .size = {144, 20} }
 #define STREET_FRAME				 (GRect){ .origin = { 0, 63 }, .size = {144, 20} }
@@ -30,8 +31,9 @@
 #define BATTERY_LEVEL_FRAME  (GRect){ .origin = { 75, 5 }, .size = {30, 30} }
 #define UPDATED_FRAME        (GRect){ .origin = { 80, 5 }, .size = {60, 30} }
 #define WEATHER_FRAME        (GRect){ .origin = { 0, 90 }, .size = {144, 78} }
-#define TEMP_FRAME					 (GRect){ .origin = { 35, -2 }, .size = {82, 30} }
 #define ICON_FRAME					 (GRect){ .origin = { 0, 0 }, .size = {40, 40} }
+#define TEMP_FRAME					 (GRect){ .origin = { 35, -2 }, .size = {82, 30} }
+#define MOON_FRAME					 (GRect){ .origin = { 117, 3 }, .size = {30, 40} }
 #define RAIN_FRAME					 (GRect){ .origin = { 0, 26 }, .size = {144, 40} }
 #define CITY_FRAME					 (GRect){ .origin = { 0, 42 }, .size = {144, 20} }
 #define STREET_FRAME				 (GRect){ .origin = { 0, 60 }, .size = {144, 20} }
@@ -46,9 +48,22 @@
 #define  RAIN_PROB_KEY 0x6  // TUPLE_CSTRING
 #define  RAIN_KEY 0x7   // TUPLE_CSTRING
 #define  STOCKS_KEY 0x8   // TUPLE_CSTRING
-
+#define  MOON_KEY 0x9   // TUPLE_INT
 
 #define  CMD_KEY 0x0  // TUPLE_INT
+
+#define  PEBBLE_BATTERY_KEY 0xA  // TUPLE_CSTRING
+
+static const uint32_t MOON_ICONS[] = {
+  RESOURCE_ID_MOON1, //0
+  RESOURCE_ID_MOON2, //1
+  RESOURCE_ID_MOON3, //2
+  RESOURCE_ID_MOON4, //3
+  RESOURCE_ID_MOON5, //4
+  RESOURCE_ID_MOON6, //5
+  RESOURCE_ID_MOON7, //6
+  RESOURCE_ID_MOON8  //7
+};
 
 
 static Window * window;			/* main window */
@@ -59,12 +74,14 @@ TextLayer *indicators_layer;   	/* layer for last update */
 TextLayer *battery_level_layer;	/* layer for battery level */
 //BitmapLayer *icon_layer;
 TextLayer *icon_text_layer;
+BitmapLayer *moon_layer;
 TextLayer *city_layer;
 TextLayer *street_layer;
 TextLayer *temp_layer;
 TextLayer *rain_layer;
 BitmapLayer *weather_layer;
 
+static GBitmap *moon_bitmap = NULL;
 static GBitmap *background = NULL;
 
 struct Pebble {
@@ -127,23 +144,32 @@ static void toggle_layer_callback(void *context) {
   toggle_layer = app_timer_register(timeout_ms, toggle_layer_callback, NULL);
 }
 
-static void send_cmd(int command) {
+static void send_cmd() {
   
-  Tuplet value = TupletInteger(command, 1);
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
-
+  
   if (iter == NULL) {
     return;
   }
-  dict_write_tuplet(iter, &value);
+  
+  dict_write_tuplet(iter, &TupletInteger(CMD_KEY, 1));
+  //Tuplet command_tuplet = TupletInteger(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent);
+  dict_write_tuplet(iter, &TupletInteger(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent));
+  
   dict_write_end(iter);
 
   app_message_outbox_send();
 }
 
+void weather_layer_update_callback(Layer *me, GContext* ctx) {
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  //graphics_fill_circle(ctx, (GPoint){ .x = 12, .y = 14 }, 8);
+  //graphics_context_set_fill_color(ctx, GColorBlack);
+  //graphics_fill_circle(ctx, (GPoint){ .x = 5, .y = 14 }, 8);
+}
+
 void indicators_layer_update_callback(Layer *me, GContext* ctx) {
-  app_timer_cancel(timer);
   text_layer_set_text(battery_level_layer, itoa(Pebble.battery.charge_percent));
   if(!Pebble.battery.is_charging) {
     graphics_context_set_fill_color(ctx, GColorWhite);
@@ -155,6 +181,7 @@ void indicators_layer_update_callback(Layer *me, GContext* ctx) {
   if(Pebble.battery.is_charging) {
     static unsigned int level = 0;
     const uint32_t timeout_ms = 250;
+    app_timer_cancel(timer);
     timer = app_timer_register(timeout_ms, timer_callback, NULL);
     graphics_context_set_fill_color(ctx, GColorWhite);
 	  graphics_context_set_stroke_color(ctx, GColorWhite);
@@ -191,14 +218,14 @@ void battery_state_callback(BatteryChargeState charge){
 void bluetooth_status_callback(bool connected){
   Pebble.bluetooth = connected;
   layer_mark_dirty(text_layer_get_layer(indicators_layer));
-  if (connected) send_cmd(CMD_KEY);
+  if (connected) send_cmd();
   if (!connected) vibes_double_pulse();
 }
 
 static void syncData_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
   switch(app_message_error){
     case APP_MSG_OK:
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Sincronización ok");
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Sincronizacion ok");
       break;
     case APP_MSG_SEND_TIMEOUT:
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Error en la sincronizacion: Timeout");
@@ -282,6 +309,27 @@ static void syncData_changed_callback(const uint32_t key, const Tuple* new_tuple
     //APP_LOG(APP_LOG_LEVEL_DEBUG, "Stocks actualizados: %s", new_tuple->value->cstring);
 	  layer_mark_dirty(text_layer_get_layer(rain_layer));
       break;
+      
+    case MOON_KEY:
+        if (moon_bitmap) {
+          gbitmap_destroy(moon_bitmap);
+        }
+        
+        int moonPhase = 0;
+        
+        if (new_tuple->value->uint8 == 0) moonPhase = 0;
+        if (new_tuple->value->uint8 > 0) moonPhase = 1;
+        if (new_tuple->value->uint8 >= 20) moonPhase = 2;
+        if (new_tuple->value->uint8 >= 30) moonPhase = 3;
+        if (new_tuple->value->uint8 == 50) moonPhase = 4;
+        if (new_tuple->value->uint8 > 50) moonPhase = 5;
+        if (new_tuple->value->uint8 >= 70) moonPhase = 6;
+        if (new_tuple->value->uint8 >= 80) moonPhase = 7;
+        if (new_tuple->value->uint8 == 100) moonPhase = 8;
+        
+        moon_bitmap = gbitmap_create_with_resource(MOON_ICONS[moonPhase]);
+        bitmap_layer_set_bitmap(moon_layer, moon_bitmap);
+        break;
       
     default:
       //layer_mark_dirty(text_layer_get_layer(rain_layer));
@@ -518,26 +566,19 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed)
     Pebble.minute = minute_text;
     layer_mark_dirty(text_layer_get_layer(time_layer));
     
-    app_log(APP_LOG_LEVEL_DEBUG, "main.c", 414, "Enviando solicitud de actualizacion...");
-    send_cmd(CMD_KEY);
-    app_log(APP_LOG_LEVEL_DEBUG, "main.c", 416, "Enviada solicitud.");
+    send_cmd();
     
-	
-	//if(!(tick_time->tm_min % 15)) {
-		//vibes_double_pulse();
-		//send_cmd(CMD_WEATHER_KEY);//Every 15 minutes, request updated weather
-		//http_location_request();
-    //} else {
-		//Every minute, ping the phone
-		//link_monitor_ping();
-    //}
+    if(!(tick_time->tm_min % 5)) {
+      //send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent); //Every 15 minutes, send updated battery
+		}
 }
 
 
 static void init() {
   
-  app_message_open(124, 124);
-  
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "Maximo buffer de entrada usado: %d", (int)app_message_inbox_size_maximum());
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "Maximo buffer de salida usado: %d", (int)app_message_outbox_size_maximum());
   window = window_create();
   window_set_background_color(window, GColorBlack);
   window_set_fullscreen(window, true);
@@ -546,7 +587,7 @@ static void init() {
 
   Layer *window_layer = window_get_root_layer(window);
   
-  background = gbitmap_create_with_resource(RESOURCE_ID_BKG);
+  //background = gbitmap_create_with_resource(RESOURCE_ID_BKG);
   
   Pebble.battery = battery_state_service_peek();
   Pebble.bluetooth = bluetooth_connection_service_peek();
@@ -559,7 +600,8 @@ static void init() {
     TupletCString(CLOUDS_KEY, ""),
     TupletCString(RAIN_KEY, ""),
     TupletCString(RAIN_PROB_KEY, ""),
-    TupletCString(STOCKS_KEY, "")
+    TupletCString(STOCKS_KEY, ""),
+    TupletInteger(MOON_KEY, 0)
   };
   
   app_sync_init(&syncData, syncBuffer, sizeof(syncBuffer), initialValues, ARRAY_LENGTH(initialValues),
@@ -586,7 +628,7 @@ static void init() {
 	
 	#endif
 	
-	meteocons_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_METEOCONS_28));
+	meteocons_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_METEOCONS_26));
 	icomoon_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_METEOCONS_14));
   
   
@@ -639,6 +681,7 @@ static void init() {
 	weather_layer = bitmap_layer_create(WEATHER_FRAME);
 	bitmap_layer_set_background_color(weather_layer, GColorWhite);
 	layer_add_child(window_layer, bitmap_layer_get_layer(weather_layer));
+	//layer_set_update_proc(bitmap_layer_get_layer(weather_layer), weather_layer_update_callback);
 	//bitmap_layer_set_bitmap(weather_layer, background);
 	
   // Add icon layer
@@ -662,6 +705,12 @@ static void init() {
 	layer_add_child(bitmap_layer_get_layer(weather_layer), text_layer_get_layer(icon_text_layer));
 	//text_layer_set_text(icon_text_layer, "0");
 	
+	// Add moon layer
+	moon_layer = bitmap_layer_create(MOON_FRAME);
+	bitmap_layer_set_background_color(moon_layer, GColorClear);
+  bitmap_layer_set_alignment(moon_layer, GAlignTopLeft);
+	layer_add_child(bitmap_layer_get_layer(weather_layer), bitmap_layer_get_layer(moon_layer));
+  
 	// Add rain layer
 	rain_layer = text_layer_create(RAIN_FRAME); 
 	text_layer_set_text_color(rain_layer, GColorBlack);
@@ -693,7 +742,7 @@ static void init() {
 	//spinner = ppspinner_create((GRect){ .origin = { 50, 30 }, .size = {50, 15} }, 5, 0, 250);
 	//layer_add_child(bitmap_layer_get_layer(weather_layer), spinner);
 	//ppspinner_start(spinner);
-	//send_cmd(CMD_WEATHER_KEY);
+	send_cmd();
 }
 
 static void deinit() {
@@ -702,8 +751,13 @@ static void deinit() {
   battery_state_service_unsubscribe();
   
   gbitmap_destroy(background);
+  gbitmap_destroy(moon_bitmap);
   
   app_sync_deinit(&syncData);
+  
+  app_timer_cancel(timer);
+  app_timer_cancel(toggle_layer);
+  
   
   text_layer_destroy(date_layer);
   text_layer_destroy(time_layer);
@@ -717,6 +771,7 @@ static void deinit() {
   text_layer_destroy(street_layer);
   text_layer_destroy(rain_layer);
   text_layer_destroy(icon_text_layer);
+  bitmap_layer_destroy(moon_layer);
   
   #ifdef CUSTOM_FONTS
   

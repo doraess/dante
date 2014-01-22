@@ -2,6 +2,7 @@
     "versionLabel": "1.0",
     "uuid": "17c0d721-796a-46eb-bf22-427fa4bccdcf",
     "appKeys": {
+          "command": 0,
           "icon" : 1,
           "temperature" : 2,
           "city" : 3,
@@ -9,7 +10,9 @@
           "clouds" : 5,
           "rain_prob" : 6,
           "rain" : 7,
-          "stocks": 8
+          "stocks": 8,
+          "moon": 9,
+          "pebble_battery": 10
 		},
     "longName": "Dante",
     "versionCode": 1,
@@ -32,8 +35,43 @@
             },
             {
                 "type": "png",
-                "name": "BKG",
-                "file": "images/weather_bg.png"
+                "name": "MOON1",
+                "file": "images/Moon1.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON2",
+                "file": "images/Moon2.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON3",
+                "file": "images/Moon3.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON4",
+                "file": "images/Moon4.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON5",
+                "file": "images/Moon5.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON6",
+                "file": "images/Moon6.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON7",
+                "file": "images/Moon7.png"
+            },
+            {
+                "type": "png",
+                "name": "MOON8",
+                "file": "images/Moon8.png"
             },
             {
                 "type": "font",
@@ -90,7 +128,7 @@
             {
                 "trackingAdjust": 0,
                 "type": "font",
-                "name": "METEOCONS_28",
+                "name": "METEOCONS_26",
                 "file": "fonts/meteocons.ttf"
             },
             {
