@@ -52,8 +52,8 @@ log:
 	@$(PEBBLE) logs --phone $(DORAESS)
 
 git:
-	@cd ~/Documents/Proyectos/www/doraess.github.io/
-	@git add .
-	@git commit -m "Updated version"
-	@git push 
+	cd /Users/alberto/Documents/Proyectos/www/doraess.github.io/
+	git add .
+	git commit -m "Updated version"
+	git push 
 	
