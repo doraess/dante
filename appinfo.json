@@ -12,7 +12,8 @@
           "rain" : 7,
           "stocks": 8,
           "moon": 9,
-          "pebble_battery": 10
+          "pebble_battery": 10,
+          "websocket": 11
 		},
     "longName": "Dante",
     "versionCode": 1,

@@ -4,14 +4,16 @@ JS_FILE=$(shell pwd)/src/js/pebble-js-app.js
 CONFIG_FILE=$(shell pwd)/src/js/config.html
 CONFIG_FILE_MIN=$(shell pwd)/src/js/config.min.html
 DORAESS="X-Wing.local"
-PEBBLE="/Users/alberto/Documents/Proyectos/pebble/PebbleSDK-2.0.0/bin/pebble"
+PEBBLE=$(shell which pebble)
+DIR=$(shell pwd)
 #DORAESS="192.168.0.127"
 
-all: clean ping build install
+all: clean ping build install log
 
 build: coffee jade libs
 	@echo "Construyendo el proyecto ... \c"; 
-	@$(PEBBLE) build> /dev/null 2>&1
+	#@$(PEBBLE) build> /dev/null 2>&1
+	@$(PEBBLE) build
 	@echo "OK"
 
 coffee: $(COFFEE_FILE)
@@ -26,26 +28,32 @@ jade: $(JADE_FILE)
 	@cat $(CONFIG_FILE) | tr -d '\n' > $(CONFIG_FILE_MIN) 
 	@echo "OK"
 
-libs: $(JS_FILE) $(wildcard src/js/libs/*.js)
+libs: $(JS_FILE)
 	@$(foreach file,$(wildcard src/js/libs/*.js), \
 	echo "Añadiendo librería $(file) ... \c"; \
 	echo "\n/**---------- Library $(file) -----------**/ \n" >> $(JS_FILE); \
 	cat $(file) >> $(JS_FILE); \
-	echo "Ok";)
+	echo "OK";)
 
 clean:
 	@echo "Limpiando el proyecto ... \c"
 	@$(PEBBLE) clean > /dev/null 2>&1
-	@echo "Ok"
+	@echo "OK"
 
 ping:
 	@echo "Conectado con el iPhone ... \c"
 	@$(PEBBLE) ping --phone $(DORAESS)
-	@echo "Ok"
+	@echo "OK"
 
 install:
 	@$(PEBBLE) install --phone $(DORAESS)
 	
 log:
 	@$(PEBBLE) logs --phone $(DORAESS)
+
+git:
+	@cd ~/Documents/Proyectos/www/doraess.github.io/
+	@git add .
+	@git commit -m "Updated version"
+	@git push 
 	

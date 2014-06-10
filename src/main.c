@@ -9,7 +9,7 @@
 #ifdef CUSTOM_FONTS
 
 #define TIME_FRAME           (GRect){ .origin = { 0, 0 }, .size = {144, 162} }
-#define DATE_FRAME           (GRect){ .origin = { 0, 50 }, .size = {144, 25} }
+#define DATE_FRAME           (GRect){ .origin = { 0, 50 }, .size = {144, 40} }
 #define INDICATORS_FRAME     (GRect){ .origin = { 0, 68 }, .size = {144, 30} }
 #define BATTERY_FRAME        (GRect){ .origin = { 50, 0 }, .size = {30, 30} }
 #define BATTERY_LEVEL_FRAME  (GRect){ .origin = { 75, 7 }, .size = {30, 30} }
@@ -25,7 +25,7 @@
 #else
 
 #define TIME_FRAME           (GRect){ .origin = { 0, 0 }, .size = {144, 162} }
-#define DATE_FRAME           (GRect){ .origin = { 0, 45 }, .size = {144, 25} }
+#define DATE_FRAME           (GRect){ .origin = { 0, 45 }, .size = {144, 40} }
 #define INDICATORS_FRAME     (GRect){ .origin = { 0, 68 }, .size = {144, 30} }
 #define BATTERY_FRAME        (GRect){ .origin = { 50, 0 }, .size = {30, 30} }
 #define BATTERY_LEVEL_FRAME  (GRect){ .origin = { 75, 5 }, .size = {30, 30} }
@@ -49,6 +49,7 @@
 #define  RAIN_KEY 0x7   // TUPLE_CSTRING
 #define  STOCKS_KEY 0x8   // TUPLE_CSTRING
 #define  MOON_KEY 0x9   // TUPLE_INT
+#define  WS_KEY 0xB   // TUPLE_INT
 
 #define  CMD_KEY 0x0  // TUPLE_INT
 
@@ -90,6 +91,7 @@ struct Pebble {
 	const char *hour;
   const char *minute;
   int current_layer;
+  bool websocket;
 } Pebble;
 
 static AppSync syncData;
@@ -171,6 +173,7 @@ void weather_layer_update_callback(Layer *me, GContext* ctx) {
 
 void indicators_layer_update_callback(Layer *me, GContext* ctx) {
   text_layer_set_text(battery_level_layer, itoa(Pebble.battery.charge_percent));
+  
   if(!Pebble.battery.is_charging) {
     graphics_context_set_fill_color(ctx, GColorWhite);
 	  graphics_context_set_stroke_color(ctx, GColorWhite);
@@ -208,6 +211,12 @@ void indicators_layer_update_callback(Layer *me, GContext* ctx) {
     graphics_fill_circle(ctx, (GPoint){.x=12, .y=14}, 2);
     graphics_fill_circle(ctx, (GPoint){.x=17, .y=14}, 1);
   } 
+
+  if(Pebble.websocket) {
+    graphics_fill_circle(ctx, (GPoint){.x=5, .y=0}, 3);
+    graphics_fill_circle(ctx, (GPoint){.x=12, .y=0}, 2);
+    graphics_fill_circle(ctx, (GPoint){.x=17, .y=0}, 1);
+  } 
 }
 
 void battery_state_callback(BatteryChargeState charge){
@@ -216,10 +225,10 @@ void battery_state_callback(BatteryChargeState charge){
 }
 
 void bluetooth_status_callback(bool connected){
+  if (connected && Pebble.bluetooth == false) send_cmd();
+  if (!connected && Pebble.bluetooth == true) vibes_double_pulse();
   Pebble.bluetooth = connected;
   layer_mark_dirty(text_layer_get_layer(indicators_layer));
-  if (connected) send_cmd();
-  if (!connected) vibes_double_pulse();
 }
 
 static void syncData_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
@@ -330,6 +339,12 @@ static void syncData_changed_callback(const uint32_t key, const Tuple* new_tuple
         moon_bitmap = gbitmap_create_with_resource(MOON_ICONS[moonPhase]);
         bitmap_layer_set_bitmap(moon_layer, moon_bitmap);
         break;
+
+    case WS_KEY:
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Websocket: %d", new_tuple->value->uint8);
+    Pebble.websocket = new_tuple->value->uint8;
+    layer_mark_dirty(text_layer_get_layer(indicators_layer));
+      break;
       
     default:
       //layer_mark_dirty(text_layer_get_layer(rain_layer));
@@ -338,8 +353,6 @@ static void syncData_changed_callback(const uint32_t key, const Tuple* new_tuple
   }
 	
 }
-
-
 
 void rain_layer_update_callback(Layer *me, GContext* ctx) {
 
@@ -567,6 +580,11 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed)
     layer_mark_dirty(text_layer_get_layer(time_layer));
     
     send_cmd();
+
+    if(!(tick_time->tm_min % 2)) {
+       //send_cmd();
+    }
+   
     
     if(!(tick_time->tm_min % 5)) {
       //send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent); //Every 15 minutes, send updated battery
@@ -601,7 +619,8 @@ static void init() {
     TupletCString(RAIN_KEY, ""),
     TupletCString(RAIN_PROB_KEY, ""),
     TupletCString(STOCKS_KEY, ""),
-    TupletInteger(MOON_KEY, 0)
+    TupletInteger(MOON_KEY, 0),
+    TupletInteger(WS_KEY, 0)
   };
   
   app_sync_init(&syncData, syncBuffer, sizeof(syncBuffer), initialValues, ARRAY_LENGTH(initialValues),
@@ -712,7 +731,7 @@ static void init() {
 	layer_add_child(bitmap_layer_get_layer(weather_layer), bitmap_layer_get_layer(moon_layer));
   
 	// Add rain layer
-	rain_layer = text_layer_create(RAIN_FRAME); 
+	rain_layer = text_layer_create(RAIN_FRAME);
 	text_layer_set_text_color(rain_layer, GColorBlack);
 	text_layer_set_background_color(rain_layer, GColorClear);
 	text_layer_set_text_alignment(rain_layer, GTextAlignmentCenter);
@@ -721,7 +740,7 @@ static void init() {
 	layer_set_update_proc(text_layer_get_layer(rain_layer), rain_layer_update_callback);
 
 	// Add city layer
-	city_layer = text_layer_create(CITY_FRAME); 
+	city_layer = text_layer_create(CITY_FRAME);
 	text_layer_set_background_color(city_layer, GColorClear);
 	text_layer_set_text_alignment(city_layer, GTextAlignmentCenter);
 	text_layer_set_font(city_layer, city_font);

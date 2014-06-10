@@ -1,6 +1,6 @@
 config = {}
 
-debug = true
+debug = ['WS']
 
 #forecastio_key = "cadac7d880dc4faa96e18a35a96846ec"
 #symbol = 'TEF.MC'
@@ -80,28 +80,38 @@ tidyString = (str) ->
   str = str.replace /Plaza /, "Pz. "
   
 enableWs = () ->
-  console.log render socket, undefined, 10 
+  #console.log render socket, undefined, 10 
   if not socket
     socket = new WebSocket('ws://doraess.no-ip.org:3900/pebble')
-  
+    if 'WS' in debug then console.log "----> Habilitando websocket...#{socket.readyState}".yellow 
+    Pebble.sendAppMessage
+      websocket: true
     socket.addEventListener "open", ->
-      if debug then console.log "----> Websocket abierto".green
-      socket.send "Pebble conectado"
+      if 'WS' in debug then console.log "----> Websocket abierto...#{socket.readyState}".green
+      socket.send forecast
 
     socket.addEventListener "message", (event) ->
       console.log event.data
+      Pebble.showSimpleNotificationOnPebble "Conectado con Galáctica"
 
     socket.addEventListener "close", ->
-      if debug then console.log "close"
+      if 'WS' in debug then console.log "----> Websocket cerrado...#{socket.readyState}".green
 
     socket.addEventListener "error", (error) ->
-      if debug then console.log error
+      if 'WS' in debug then "----> Error en Websocket...#{error}".green
+  else
+    if 'WS' in debug then console.log "----> Socket ya abierto...#{socket.readyState}".yellow
     
     
 disableWs = () ->
-  if socket
+  if socket and socket.readyState is socket.OPEN
+    if 'WS' in debug then console.log "----> Deshabilitando websocket...#{socket.readyState}".yellow 
     socket.close()
-  console.log render socket, undefined, 10 
+    Pebble.sendAppMessage
+      websocket: false
+  else
+    if 'WS' in debug then console.log "----> Socket ya cerrado...#{socket.readyState}".yellow
+  socket = null
   
 checkConfig = (config, callback) ->
   for key, value of config
@@ -118,8 +128,8 @@ sendPebbleData = (data) ->
   emoncms.open "GET", encodeURI emoncms_url, false
   emoncms.onreadystatechange = ->
     if emoncms.readyState is 4 and emoncms.status is 200
-      if debug then console.log emoncms.responseText
-  if debug then console.log "----> Enviando request a emoncms ... ".yellow + emoncms_url.green
+      if 'EMONCMS' in debug then console.log emoncms.responseText
+  if 'EMONCMS' in debug then console.log "----> Enviando request a emoncms ... ".yellow + emoncms_url.green
   emoncms.setRequestHeader 'Content-type', 'application/x-www-form-urlencoded'
   emoncms.send()
   
@@ -129,14 +139,14 @@ sendPebbleData = (data) ->
   doraess.open "GET", encodeURI doraess_url, false
   doraess.onreadystatechange = ->
     if doraess.readyState is 4 and doraess.status is 200
-      if debug then console.log doraess.responseText
-  if debug then console.log "----> Enviando request a doraess ... ".yellow + doraess_url.green
+      if 'EMONCMS' in debug then console.log doraess.responseText
+  if 'EMONCMS' in debug then console.log "----> Enviando request a doraess ... ".yellow + doraess_url.green
   doraess.setRequestHeader 'Content-type', 'application/x-www-form-urlencoded'
   doraess.send()
 
 fetchWeather = (latitude, longitude) ->
   checkConfig config, -> 
-    if debug then console.log "----> Usando configuración ... \n".green + render config, undefined, 10 
+    if 'FORECAST' in debug then console.log "----> Usando configuración ... \n".green + render config, undefined, 10 
   data = {}
   weather = new XMLHttpRequest()
   weather.timeout = 15000
@@ -155,18 +165,18 @@ fetchWeather = (latitude, longitude) ->
           rain : if Math.ceil(response.currently.precipIntensity*2.54) >= 1 then " " + Math.ceil(response.currently.precipIntensity*2.54) + "cm" else ""
           moon : parseInt response.daily.data[0].moonPhase * 100 
         , sendSuccess, forecastFailure
-        if debug then console.log "----> Sincronizando datos: \n".green + render data, undefined, 10
+        if 'FORECAST' in debug then console.log "----> Sincronizando datos: \n".green + render data, undefined, 10
       else
-        if debug then console.log "----> Error en la respuesta de forecast.io".red
+        if 'FORECAST' in debug then console.log "----> Error en la respuesta de forecast.io".red
   weather.ontimeout = ->
-    if debug then console.log "----> Timeout en la solicitud a forecast.io".red
+    if 'FORECAST' in debug then console.log "----> Timeout en la solicitud a forecast.io".red
     forecast.icon = ')'
     forecast.temperature = 'Error'
     forecast.clouds = ''
     forecast.rain_prob = ''
     forecast.rain = ''
     Pebble.sendAppMessage forecast, sendSuccess, forecastFailure    
-  if debug then console.log "----> Enviando request a forecast.io ... ".yellow + weather_url.green
+  if 'FORECAST' in debug then console.log "----> Enviando request a forecast.io ... ".yellow + weather_url.green
   weather.send()
   
   location = new XMLHttpRequest()
@@ -187,15 +197,15 @@ fetchWeather = (latitude, longitude) ->
             #address.city = component.long_name.stripAccents()
             address.city = component.long_name
         Pebble.sendAppMessage address, sendSuccess, addressFailure
-        if debug then console.log "----> Sincronizando datos: \n".green + render address, undefined, 10
+        if 'FORECAST' in debug then console.log "----> Sincronizando datos: \n".green + render address, undefined, 10
       else
-        if debug then console.log "----> Error en la respuesta de google".red
+        if 'FORECAST' in debug then console.log "----> Error en la respuesta de google".red
   location.ontimeout = ->
     address.city = 'Error'
     address.street = 'Timeout en la solicitud'
-    if debug then console.log "----> Timeout en la solicitud a google".red
+    if 'FORECAST' in debug then console.log "----> Timeout en la solicitud a google".red
     Pebble.sendAppMessage address, sendSuccess, addressFailure  
-  if debug then console.log "----> Enviando request a google ... ".yellow + location_url.green
+  if 'FORECAST' in debug then console.log "----> Enviando request a google ... ".yellow + location_url.green
   location.send()
   
   stock = new XMLHttpRequest()
@@ -209,27 +219,27 @@ fetchWeather = (latitude, longitude) ->
       updown = /class=\"([_upgdownr]*) time_rtq_content\"/i.exec this.response
       if value and percent and updown
         stocks.stocks = config.stock_symbol + ': ' + value[1] + '€ (' + [ if updown[1] is 'up_g' then '+' else '-'] + percent[1] + '%)'
-      if debug then console.log "----> Sincronizando datos: \n".green + render stocks, undefined, 10
+      if 'FORECAST' in debug then console.log "----> Sincronizando datos: \n".green + render stocks, undefined, 10
       Pebble.sendAppMessage stocks, sendSuccess, stocksFailure
   stock.ontimeout = ->
-    if debug then console.log "----> Timeout en la solicitud a yahoo finance".red
-  if debug then console.log "----> Enviando request a yahoo finance ... ".yellow + stock_url.green
+    if 'FORECAST' in debug then console.log "----> Timeout en la solicitud a yahoo finance".red
+  if 'FORECAST' in debug then console.log "----> Enviando request a yahoo finance ... ".yellow + stock_url.green
   stock.send()
   
 addressFailure = (e) ->
-  if debug then console.log "----> Error en la sincronización: \n".red + render e, undefined, 10
+  if 'SYNC' in debug then console.log "----> Error en la sincronización: \n".red + render e, undefined, 10
   Pebble.sendAppMessage address, sendSuccess, addressFailure
   
 stocksFailure = (e) ->
-  if debug then console.log "----> Error en la sincronización: \n".red + render e, undefined, 10
+  if 'SYNC' in debug then console.log "----> Error en la sincronización: \n".red + render e, undefined, 10
   Pebble.sendAppMessage stocks, sendSuccess, stocksFailure
   
 forecastFailure = (e) ->
-  if debug then console.log "----> Error en la sincronización: \n".red + render e, undefined, 10
+  if 'SYNC' in debug then console.log "----> Error en la sincronización: \n".red + render e, undefined, 10
   Pebble.sendAppMessage forecast, sendSuccess, forecastFailure
   
 sendSuccess = ->
-  if debug then console.log "----> Datos sincronizados".green
+  if 'SYNC' in debug then console.log "----> Datos sincronizados".green
   
 locationSuccess = (pos) ->
   coordinates = pos.coords
@@ -249,7 +259,7 @@ locationOptions =
 Pebble.addEventListener "ready", (e) ->
   console.log "----> La aplicación está lista: ".green + Pebble.getAccountToken().green
   console.log "----> Plataforma: \n".green +  render navigator, undefined, 10
-  if debug then console.log "----> Document: \n".green +  render document, undefined, 10
+  if 'INFO' in debug then console.log "----> Document: \n".green +  render document, undefined, 10
   
   if config.ws_enabled
     enableWs() 
@@ -257,9 +267,9 @@ Pebble.addEventListener "ready", (e) ->
   if typeof json is 'string'
     config = JSON.parse json
     checkConfig config, -> 
-      if debug then console.log "----> Cargando datos de configuracion...\n".green + render config, undefined, 10
+      if 'INFO' in debug then console.log "----> Cargando datos de configuracion...\n".green + render config, undefined, 10
   
-  if debug then console.log "---->Pebble Account Token: ".green + Pebble.getAccountToken().yellow
+  if 'INFO' in debug then console.log "---->Pebble Account Token: ".green + Pebble.getAccountToken().yellow
     
   #locationWatcher = window.navigator.geolocation.watchPosition locationSuccess, locationError, locationOptions
   
@@ -272,12 +282,12 @@ document.addEventListener "devicemotion", (ev) ->
 
 
 Pebble.addEventListener "appmessage", (e) ->
-  if debug then console.log JSON.stringify e.payload
+  if 'FORECAST' in debug then console.log JSON.stringify e.payload
   if e.payload.command
-    if debug then console.log "----> Solicitud de actualización".green
+    if 'FORECAST' in debug then console.log "----> Solicitud de actualización".green
     navigator.geolocation.getCurrentPosition locationSuccess, locationError, locationOptions
   if e.payload.pebble_battery
-    if debug then console.log "----> Envío de datos del Pebble ...\n".green + render e.payload, undefined, 10
+    if 'FORECAST' in debug then console.log "----> Envío de datos del Pebble ...\n".green + render e.payload, undefined, 10
     if forecast.currently
       sendPebbleData 
         pebble_battery : e.payload.pebble_battery
@@ -291,15 +301,13 @@ Pebble.addEventListener "appmessage", (e) ->
 Pebble.addEventListener "webviewclosed", (e) ->
   if e.response
     config = JSON.parse e.response
-    if debug then console.log "----> Opciones: \n".green + render config, undefined, 10
-    if debug then console.log "----> Webview cerrada.".yellow
+    if 'INFO' in debug then console.log "----> Opciones: \n".green + render config, undefined, 10
+    if 'INFO' in debug then console.log "----> Webview cerrada.".yellow
     navigator.geolocation.getCurrentPosition locationSuccess, locationError, locationOptions
     window.localStorage.setItem 'config', e.response
     if config.ws_enabled is true
-      if debug then console.log "----> Habilitando websocket...\n".yellow 
       enableWs()
-    else
-      if debug then console.log "----> Deshabilitando sebsocket...\n".yellow
+    else 
       disableWs()
     
   
@@ -310,5 +318,5 @@ Pebble.addEventListener "showConfiguration", (e) ->
     "&stock_symbol=#{encodeURIComponent config.stock_symbol}" +
     "&ws_enabled=#{encodeURIComponent config.ws_enabled}"
   #uri = "http://x.setpebble.com/api/8KKT/17C0D721-796A-46EB-BF22-427FA4BCCDCF"
-  if debug then console.log "----> Abriendo configuración ... ".yellow + uri.green
+  if 'INFO' in debug then console.log "----> Abriendo configuración ... ".yellow + uri.green
   Pebble.openURL uri
