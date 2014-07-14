@@ -84,21 +84,26 @@ enableWs = () ->
   if not socket
     socket = new WebSocket('ws://doraess.no-ip.org:3900/pebble')
     if 'WS' in debug then console.log "----> Habilitando websocket...#{socket.readyState}".yellow 
-    Pebble.sendAppMessage
-      websocket: true
+    
     socket.addEventListener "open", ->
       if 'WS' in debug then console.log "----> Websocket abierto...#{socket.readyState}".green
-      socket.send forecast
+      socket.send "Pebble conectado"
+      Pebble.showSimpleNotificationOnPebble "Websocket", "Conectado con Galáctica"
+      config.ws_enabled = true
+      Pebble.sendAppMessage
+        websocket: true
 
     socket.addEventListener "message", (event) ->
-      console.log event.data
-      Pebble.showSimpleNotificationOnPebble "Conectado con Galáctica"
+      console.log JSON.stringify event.data
 
     socket.addEventListener "close", ->
-      if 'WS' in debug then console.log "----> Websocket cerrado...#{socket.readyState}".green
+      if 'WS' in debug then console.log "----> Websocket cerrado.".green
+      config.ws_enabled = false
 
     socket.addEventListener "error", (error) ->
       if 'WS' in debug then "----> Error en Websocket...#{error}".green
+      config.ws_enabled = false
+
   else
     if 'WS' in debug then console.log "----> Socket ya abierto...#{socket.readyState}".yellow
     
@@ -107,16 +112,17 @@ disableWs = () ->
   if socket and socket.readyState is socket.OPEN
     if 'WS' in debug then console.log "----> Deshabilitando websocket...#{socket.readyState}".yellow 
     socket.close()
+    socket = null
     Pebble.sendAppMessage
       websocket: false
   else
-    if 'WS' in debug then console.log "----> Socket ya cerrado...#{socket.readyState}".yellow
-  socket = null
+    if 'WS' in debug then console.log "----> Socket ya cerrado.".yellow
+  config.ws_enabled = false
   
 checkConfig = (config, callback) ->
   for key, value of config
-    if value is undefined or ''
-      Pebble.showSimpleNotificationOnPebble 'Error de configuración', "Falta el valor de #{key}, por favor abra la ventana de configuración \
+    if value is undefined or ""
+      Pebble.showSimpleNotificationOnPebble "Error de configuración", "Falta el valor de #{key}, por favor abra la ventana de configuración \
       e introduzca el valor correspondiente"
       break
   callback()
@@ -297,6 +303,11 @@ Pebble.addEventListener "appmessage", (e) ->
       sendPebbleData 
         pebble_battery : e.payload.pebble_battery
     #navigator.geolocation.getCurrentPosition locationSuccess, locationError, locationOptions
+  if e.payload.websocket
+    enableWs()
+  else
+    disableWs()
+
 
 Pebble.addEventListener "webviewclosed", (e) ->
   if e.response

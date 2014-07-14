@@ -24,7 +24,7 @@
     "shortName": "Dante",
     "companyName": "Doraess",
     "watchapp": {
-        "watchface": true
+        "watchface": false
     },
     "resources": {
         "media": [

@@ -104,28 +104,31 @@
       if (__indexOf.call(debug, 'WS') >= 0) {
         console.log(("----> Habilitando websocket..." + socket.readyState).yellow);
       }
-      Pebble.sendAppMessage({
-        websocket: true
-      });
       socket.addEventListener("open", function() {
         if (__indexOf.call(debug, 'WS') >= 0) {
           console.log(("----> Websocket abierto..." + socket.readyState).green);
         }
-        return socket.send(forecast);
+        socket.send("Pebble conectado");
+        Pebble.showSimpleNotificationOnPebble("Websocket", "Conectado con Galáctica");
+        config.ws_enabled = true;
+        return Pebble.sendAppMessage({
+          websocket: true
+        });
       });
       socket.addEventListener("message", function(event) {
-        console.log(event.data);
-        return Pebble.showSimpleNotificationOnPebble("Conectado con Galáctica");
+        return console.log(JSON.stringify(event.data));
       });
       socket.addEventListener("close", function() {
         if (__indexOf.call(debug, 'WS') >= 0) {
-          return console.log(("----> Websocket cerrado..." + socket.readyState).green);
+          console.log("----> Websocket cerrado.".green);
         }
+        return config.ws_enabled = false;
       });
       return socket.addEventListener("error", function(error) {
         if (__indexOf.call(debug, 'WS') >= 0) {
-          return ("----> Error en Websocket..." + error).green;
+          ("----> Error en Websocket..." + error).green;
         }
+        return config.ws_enabled = false;
       });
     } else {
       if (__indexOf.call(debug, 'WS') >= 0) {
@@ -140,23 +143,24 @@
         console.log(("----> Deshabilitando websocket..." + socket.readyState).yellow);
       }
       socket.close();
+      socket = null;
       Pebble.sendAppMessage({
         websocket: false
       });
     } else {
       if (__indexOf.call(debug, 'WS') >= 0) {
-        console.log(("----> Socket ya cerrado..." + socket.readyState).yellow);
+        console.log("----> Socket ya cerrado.".yellow);
       }
     }
-    return socket = null;
+    return config.ws_enabled = false;
   };
 
   checkConfig = function(config, callback) {
     var key, value;
     for (key in config) {
       value = config[key];
-      if (value === void 0 || '') {
-        Pebble.showSimpleNotificationOnPebble('Error de configuración', "Falta el valor de " + key + ", por favor abra la ventana de configuración e introduzca el valor correspondiente");
+      if (value === void 0 || "") {
+        Pebble.showSimpleNotificationOnPebble("Error de configuración", "Falta el valor de " + key + ", por favor abra la ventana de configuración e introduzca el valor correspondiente");
         break;
       }
     }
@@ -417,16 +421,21 @@
         console.log("----> Envío de datos del Pebble ...\n".green + render(e.payload, void 0, 10));
       }
       if (forecast.currently) {
-        return sendPebbleData({
+        sendPebbleData({
           pebble_battery: e.payload.pebble_battery,
           pebble_temperature: forecast.currently.temperature,
           pebble_humidity: parseInt(forecast.currently.humidity * 100)
         });
       } else {
-        return sendPebbleData({
+        sendPebbleData({
           pebble_battery: e.payload.pebble_battery
         });
       }
+    }
+    if (e.payload.websocket) {
+      return enableWs();
+    } else {
+      return disableWs();
     }
   });
 

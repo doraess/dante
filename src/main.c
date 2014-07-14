@@ -146,7 +146,7 @@ static void toggle_layer_callback(void *context) {
   toggle_layer = app_timer_register(timeout_ms, toggle_layer_callback, NULL);
 }
 
-static void send_cmd() {
+static void send_cmd(int key, int value) {
   
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
@@ -157,11 +157,13 @@ static void send_cmd() {
   
   dict_write_tuplet(iter, &TupletInteger(CMD_KEY, 1));
   //Tuplet command_tuplet = TupletInteger(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent);
-  dict_write_tuplet(iter, &TupletInteger(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent));
+  //dict_write_tuplet(iter, &TupletInteger(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent));
+  dict_write_tuplet(iter, &TupletInteger(key, value));
   
   dict_write_end(iter);
 
   app_message_outbox_send();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Enviado comando... %d", key);
 }
 
 void weather_layer_update_callback(Layer *me, GContext* ctx) {
@@ -225,7 +227,7 @@ void battery_state_callback(BatteryChargeState charge){
 }
 
 void bluetooth_status_callback(bool connected){
-  if (connected && Pebble.bluetooth == false) send_cmd();
+  if (connected && Pebble.bluetooth == false) send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent);
   if (!connected && Pebble.bluetooth == true) vibes_double_pulse();
   Pebble.bluetooth = connected;
   layer_mark_dirty(text_layer_get_layer(indicators_layer));
@@ -341,7 +343,7 @@ static void syncData_changed_callback(const uint32_t key, const Tuple* new_tuple
         break;
 
     case WS_KEY:
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Websocket: %d", new_tuple->value->uint8);
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "Websocket: %d", new_tuple->value->uint8);
     Pebble.websocket = new_tuple->value->uint8;
     layer_mark_dirty(text_layer_get_layer(indicators_layer));
       break;
@@ -579,7 +581,7 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed)
     Pebble.minute = minute_text;
     layer_mark_dirty(text_layer_get_layer(time_layer));
     
-    send_cmd();
+    //send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent);
 
     if(!(tick_time->tm_min % 2)) {
        //send_cmd();
@@ -587,10 +589,21 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed)
    
     
     if(!(tick_time->tm_min % 5)) {
-      //send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent); //Every 15 minutes, send updated battery
+      send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent); //Every 15 minutes, send updated battery
 		}
 }
 
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  if (Pebble.websocket){
+    send_cmd(WS_KEY, 0);
+  } else {
+    send_cmd(WS_KEY, 1);
+  }
+}
+
+static void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+}
 
 static void init() {
   
@@ -609,6 +622,8 @@ static void init() {
   
   Pebble.battery = battery_state_service_peek();
   Pebble.bluetooth = bluetooth_connection_service_peek();
+
+  window_set_click_config_provider(window, click_config_provider);
   
   Tuplet initialValues[] = {
     TupletCString(ICON_KEY, ""),
@@ -623,8 +638,11 @@ static void init() {
     TupletInteger(WS_KEY, 0)
   };
   
+  //app_sync_init(&syncData, syncBuffer, sizeof(syncBuffer), initialValues, ARRAY_LENGTH(initialValues), syncData_changed_callback, syncData_error_callback, NULL);
+
   app_sync_init(&syncData, syncBuffer, sizeof(syncBuffer), initialValues, ARRAY_LENGTH(initialValues),
-      syncData_changed_callback, syncData_error_callback, NULL);
+      syncData_changed_callback, NULL, NULL);
+
       
   toggle_layer = app_timer_register(5000, toggle_layer_callback, NULL);
   Pebble.current_layer = 0;
@@ -761,7 +779,7 @@ static void init() {
 	//spinner = ppspinner_create((GRect){ .origin = { 50, 30 }, .size = {50, 15} }, 5, 0, 250);
 	//layer_add_child(bitmap_layer_get_layer(weather_layer), spinner);
 	//ppspinner_start(spinner);
-	send_cmd();
+	send_cmd(PEBBLE_BATTERY_KEY, Pebble.battery.charge_percent);
 }
 
 static void deinit() {

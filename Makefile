@@ -12,8 +12,7 @@ all: clean ping build install log
 
 build: coffee jade libs
 	@echo "Construyendo el proyecto ... \c"; 
-	#@$(PEBBLE) build> /dev/null 2>&1
-	@$(PEBBLE) build
+	@$(PEBBLE) build 
 	@echo "OK"
 
 coffee: $(COFFEE_FILE)
@@ -46,17 +45,16 @@ ping:
 	@echo "OK"
 
 install:
-	@$(PEBBLE) install --phone $(DORAESS)
-	
+	@echo "Instalando Dante en el Pebble ... \c"
+	@$(PEBBLE) install --phone $(DORAESS) > /dev/null 2>&1
+	@echo "OK" 
 log:
 	@$(PEBBLE) logs --phone $(DORAESS)
 
 git:
 	@echo "Subiendo a Git el proyecto ... \c"
 	@cd /Users/alberto/Documents/Proyectos/www/doraess.github.io/ && git add --all . && git commit -m "Updated version" && git push
-	@git add --all . 
-	@git commit -m "Updated version" 
-	@git push
+	@git add --all . && git commit -m "Updated version" && git push
 	@echo "OK"
 
 	
