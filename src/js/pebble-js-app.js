@@ -461,7 +461,7 @@
 
   Pebble.addEventListener("showConfiguration", function(e) {
     var uri;
-    uri = "http://doraess.github.io/pebble/dante/?" + ("forecast_api_key=" + (encodeURIComponent(config.forecast_api_key))) + ("&emoncms_api_key=" + (encodeURIComponent(config.emoncms_api_key))) + ("&stock_symbol=" + (encodeURIComponent(config.stock_symbol))) + ("&ws_enabled=" + (encodeURIComponent(config.ws_enabled)));
+    uri = "http://doraess.github.io/pebble/dante/?" + ("forecast_api_key=" + (encodeURIComponent(config.forecast_api_key))) + ("&emoncms_api_key=" + (encodeURIComponent(config.emoncms_api_key))) + ("&stock_symbol=" + (encodeURIComponent(config.stock_symbol))) + ("&ws_enabled=" + (encodeURIComponent(config.ws_enabled))) + ("&interval=" + (encodeURIComponent(config.interval)));
     if (__indexOf.call(debug, 'INFO') >= 0) {
       console.log("----> Abriendo configuración ... ".yellow + uri.green);
     }

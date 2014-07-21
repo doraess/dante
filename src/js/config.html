@@ -95,6 +95,7 @@
       console.log("Opciones ---> " + options);
       return document.location = "pebblejs://close#" + encodeURIComponent(options);
     });
+    $("#interval").val(getQueryVariable("interval"));
     $("#forecast_api_key").val(getQueryVariable("forecast_api_key"));
     $("#emoncms_api_key").val(getQueryVariable("emoncms_api_key"));
     $("#stock_symbol").val(getQueryVariable("stock_symbol"));
