@@ -1,6 +1,9 @@
 config = {}
 
-debug = ['WS']
+debug = [
+  'WS'
+  'FORECAST'
+]
 
 #forecastio_key = "cadac7d880dc4faa96e18a35a96846ec"
 #symbol = 'TEF.MC'
@@ -181,7 +184,8 @@ fetchWeather = (latitude, longitude) ->
     forecast.clouds = ''
     forecast.rain_prob = ''
     forecast.rain = ''
-    Pebble.sendAppMessage forecast, sendSuccess, forecastFailure    
+    Pebble.sendAppMessage forecast, sendSuccess, forecastFailure
+    fetchWeather latitude, longitude   
   if 'FORECAST' in debug then console.log "----> Enviando request a forecast.io ... ".yellow + weather_url.green
   weather.send()
   

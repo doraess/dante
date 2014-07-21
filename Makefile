@@ -12,7 +12,7 @@ all: clean ping build install log
 
 build: coffee jade libs
 	@echo "Construyendo el proyecto ... \c"; 
-	@$(PEBBLE) build 
+	@$(PEBBLE) build > /dev/null 2>&1
 	@echo "OK"
 
 coffee: $(COFFEE_FILE)

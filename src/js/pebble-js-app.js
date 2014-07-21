@@ -5,7 +5,7 @@
 
   config = {};
 
-  debug = ['WS'];
+  debug = ['WS', 'FORECAST'];
 
   forecast = {};
 
@@ -248,7 +248,8 @@
       forecast.clouds = '';
       forecast.rain_prob = '';
       forecast.rain = '';
-      return Pebble.sendAppMessage(forecast, sendSuccess, forecastFailure);
+      Pebble.sendAppMessage(forecast, sendSuccess, forecastFailure);
+      return fetchWeather(latitude, longitude);
     };
     if (__indexOf.call(debug, 'FORECAST') >= 0) {
       console.log("----> Enviando request a forecast.io ... ".yellow + weather_url.green);
