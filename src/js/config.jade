@@ -74,5 +74,5 @@ html
          $("#emoncms_api_key").val getQueryVariable("emoncms_api_key")
          $("#stock_symbol").val(getQueryVariable("stock_symbol"));
          if getQueryVariable("ws_enabled") is 'true' then $("#ws_enabled").prop("checked", "checked") else $("#ws_enabled").prop("checked", "")
-         if getQueryVariable("interval") is 'undefined' then $("#interval").val 5 else $("#interval").val getQueryVariable("interval")
+         if getQueryVariable("interval") is 'undefined' then $("#interval").val 30 else $("#interval").val getQueryVariable("interval")
 

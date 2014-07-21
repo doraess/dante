@@ -105,7 +105,7 @@
       $("#ws_enabled").prop("checked", "");
     }
     if (getQueryVariable("interval") === 'undefined') {
-      return $("#interval").val(5);
+      return $("#interval").val(30);
     } else {
       return $("#interval").val(getQueryVariable("interval"));
     }
