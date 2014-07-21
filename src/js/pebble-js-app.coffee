@@ -3,6 +3,7 @@ config = {}
 debug = [
   'WS'
   'FORECAST'
+  'INFO'
 ]
 
 #forecastio_key = "cadac7d880dc4faa96e18a35a96846ec"
@@ -333,6 +334,7 @@ Pebble.addEventListener "showConfiguration", (e) ->
     "&stock_symbol=#{encodeURIComponent config.stock_symbol}" +
     "&ws_enabled=#{encodeURIComponent config.ws_enabled}" +
     "&interval=#{encodeURIComponent config.interval}"
+  if 'INFO' in debug then console.log uri
   #uri = "http://x.setpebble.com/api/8KKT/17C0D721-796A-46EB-BF22-427FA4BCCDCF"
   if 'INFO' in debug then console.log "----> Abriendo configuración ... ".yellow + uri.green
   Pebble.openURL uri

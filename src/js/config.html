@@ -96,14 +96,18 @@
       console.log("Opciones ---> " + options);
       return document.location = "pebblejs://close#" + encodeURIComponent(options);
     });
-    $("#interval").val(getQueryVariable("interval"));
     $("#forecast_api_key").val(getQueryVariable("forecast_api_key"));
     $("#emoncms_api_key").val(getQueryVariable("emoncms_api_key"));
     $("#stock_symbol").val(getQueryVariable("stock_symbol"));
     if (getQueryVariable("ws_enabled") === 'true') {
-      return $("#ws_enabled").prop("checked", "checked");
+      $("#ws_enabled").prop("checked", "checked");
     } else {
-      return $("#ws_enabled").prop("checked", "");
+      $("#ws_enabled").prop("checked", "");
+    }
+    if (getQueryVariable("interval") === 'undefined') {
+      return $("#interval").val(5);
+    } else {
+      return $("#interval").val(getQueryVariable("interval"));
     }
   });
 
