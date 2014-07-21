@@ -32,9 +32,13 @@ html
           label(for='interval') Intervalo de actualización:
           select(name='interval')
             option(value='5') 
+              | 5 minutos
             option(value='10') 
+              | 10 minutos
             option(value='15') 
+              | 15 minutos
             option(value='30') 
+              | 30 minutos
         button#b-cancel.btn.btn-warning.btn-block(type='submit') Cancelar
         button#b-submit.btn.btn-success.btn-block(type='submit') Salvar
     :coffeescript
