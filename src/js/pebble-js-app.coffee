@@ -333,7 +333,7 @@ Pebble.addEventListener "showConfiguration", (e) ->
     "&emoncms_api_key=#{encodeURIComponent config.emoncms_api_key}" +
     "&stock_symbol=#{encodeURIComponent config.stock_symbol}" +
     "&ws_enabled=#{encodeURIComponent config.ws_enabled}" +
-    "&interval=#{encodeURIComponent config.interval}"
+    "&interval=#{encodeURIComponent 30}"
   if 'INFO' in debug then console.log uri
   #uri = "http://x.setpebble.com/api/8KKT/17C0D721-796A-46EB-BF22-427FA4BCCDCF"
   if 'INFO' in debug then console.log "----> Abriendo configuración ... ".yellow + uri.green
