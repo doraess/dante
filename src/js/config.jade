@@ -27,8 +27,10 @@ html
           label
             input#ws_enabled(type="checkbox", name='ws_enabled', value='') 
             | WebSocket enabled
-        | Intervalo de actualización:
-        select(name='interval')
+        
+        div.form-group
+          | Intervalo de actualización:
+          select(name='interval')
             option(value='5') 
               | 5 minutos
             option(value='10') 
